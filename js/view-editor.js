@@ -9,9 +9,9 @@
   PB.invoiceModel = function (full) {
     const inv = full.invoice;
     return {
-      settings: PB.state.settings, logo: PB.state.logos.light,
+      settings: PB.state.settings, logo: PB.state.logos.dark,
       invoice_no: inv.invoice_no, invoice_date: inv.invoice_date, order_code: inv.order_code,
-      customer_name: inv.customer_name_snap, customer_phone: inv.customer_phone_snap, customer_address: inv.customer_address_snap,
+      customer_name: inv.customer_name_snap, customer_phone: inv.customer_phone_snap, customer_address: inv.customer_address_snap, customer_email: inv.customer_email_snap,
       items: full.items, banks: inv.bank_snap, notes: inv.notes, paid: inv.paid_total, status: inv.payment_status
     };
   };
@@ -50,9 +50,10 @@
       const editing = !!params.id;
       const st = {
         invoice_id: null, invoice_no: '', invoice_date: S.today, order_code: '', customer_id: '',
-        items: [blankItem()], bank_ids: [], notes: '', dp_amount: 0, dp_method: 'Transfer',
-        paid_total: 0, status: null, jpg_url: ''
+        items: [blankItem()], bank_ids: [], notes: String((PB.state.settings || {}).default_notes || ''), dp_amount: 0, dp_method: 'Transfer',
+        paid_total: 0, status: null, jpg_url: '', notify: false
       };
+      st.notify = !params.id && PB.notifOn();
       let dirty = false, busy = false, extraCustomer = null;
 
       // ---- muat data ----
@@ -138,7 +139,7 @@
           section(2, 'Customer',
             '<div class="cust-row"><label class="field grow"><span class="label">Pilih customer</span><select id="f-cust">' + custOpts + '</select><span class="err" data-err="customer"></span></label>' +
             '<button type="button" class="btn btn-secondary" id="btn-newcust">' + PB.icon('plus', 16) + 'Customer baru</button></div>' +
-            (cust ? '<div class="cust-card"><div>' + PB.icon('phone', 14) + (cust.phone ? E(PB.fmtPhone(cust.phone)) : '<span class="muted">Tanpa nomor</span>') + '</div><div>' + PB.icon('pin', 14) + (cust.address ? E(cust.address) : '<span class="muted">Tanpa alamat</span>') + '</div></div>' : '')) +
+            (cust ? '<div class="cust-card"><div>' + PB.icon('phone', 14) + (cust.phone ? E(PB.fmtPhone(cust.phone)) : '<span class="muted">Tanpa nomor</span>') + '</div>' + (cust.email ? '<div>' + PB.icon('mail', 14) + E(cust.email) + '</div>' : '') + '<div>' + PB.icon('pin', 14) + (cust.address ? E(cust.address) : '<span class="muted">Tanpa alamat</span>') + '</div>' + (cust.opt_out ? '<div><span class="tag red">Opt-out: tidak menerima notifikasi</span></div>' : '') + '</div>' : '')) +
           section(3, 'Item Invoice', '<div id="items">' + st.items.map(itemCard).join('') + '</div><button type="button" class="btn btn-ghost add-item" id="btn-additem">' + PB.icon('plus', 16) + 'Tambah item</button>') +
           section(4, 'Pembayaran',
             editing
@@ -151,7 +152,7 @@
                   return '<button type="button" class="chip' + (st.bank_ids.indexOf(b.bank_id) >= 0 ? ' on' : '') + '" data-bank="' + E(b.bank_id) + '" aria-pressed="' + (st.bank_ids.indexOf(b.bank_id) >= 0) + '"><b>' + E(b.bank_name) + '</b><span>' + E(b.account_no) + ' · ' + E(b.account_holder) + '</span></button>';
                 }).join('') + '</div><span class="err" data-err="banks"></span>'
               : '<div class="empty-inline">Belum ada rekening aktif. <a class="link" href="#/settings">Tambah rekening di Pengaturan</a>.<span class="err" data-err="banks"></span></div>') +
-          section(6, 'Catatan', '<label class="field"><span class="label">Catatan di invoice (opsional)</span><textarea id="f-notes" rows="3" maxlength="800" placeholder="mis. Produksi 14 hari kerja setelah DP.">' + E(st.notes) + '</textarea></label>');
+          section(6, 'Catatan', '<label class="field"><span class="label">Catatan di invoice (opsional)</span><textarea id="f-notes" rows="3" maxlength="800" placeholder="mis. Produksi 14 hari kerja setelah DP.">' + E(st.notes) + '</textarea></label>' + PB.notifCheckbox('f-notify', (editing ? 'Kirim ulang info invoice ke customer via {kanal} saat disimpan' : 'Kirim invoice ke customer via {kanal} saat disimpan') + (cust && cust.opt_out ? ' (customer opt-out, tidak akan terkirim)' : ''), st.notify));
         bindForm();
       }
 
@@ -164,8 +165,8 @@
       function model() {
         const cu = customer(), t = totals();
         return {
-          settings: S.settings, logo: S.logos.light, invoice_no: st.invoice_no, invoice_date: st.invoice_date, order_code: st.order_code,
-          customer_name: cu ? cu.name : '', customer_phone: cu ? cu.phone : '', customer_address: cu ? cu.address : '',
+          settings: S.settings, logo: S.logos.dark, invoice_no: st.invoice_no, invoice_date: st.invoice_date, order_code: st.order_code,
+          customer_name: cu ? cu.name : '', customer_phone: cu ? cu.phone : '', customer_address: cu ? cu.address : '', customer_email: cu ? cu.email : '',
           items: st.items, banks: S.banks.filter(function (b) { return st.bank_ids.indexOf(b.bank_id) >= 0; }), notes: st.notes, paid: t.paid
         };
       }
@@ -218,6 +219,7 @@
         const dp = $('#f-dp', root);
         if (dp) { dp.oninput = function () { st.dp_amount = PB.maskMoney(dp); changed(); }; $('#f-dpm', root).onchange = function () { st.dp_method = this.value; saveDraft(); }; }
         $('#f-notes', root).oninput = function () { st.notes = this.value; changed(); };
+        const nf = $('#f-notify', root); if (nf) nf.onchange = function () { st.notify = this.checked; };
         $('#btn-additem', root).onclick = function () {
           st.items.push(blankItem()); renderForm(); changed();
           const cards = PB.$$('.item', root); const last = cards[cards.length - 1];
@@ -319,7 +321,7 @@
       async function saveInvoice() {
         const payload = {
           invoice_id: st.invoice_id || undefined, invoice_date: st.invoice_date, order_code: st.order_code.trim(), customer_id: st.customer_id,
-          bank_ids: st.bank_ids, notes: st.notes.trim(), dp_amount: st.dp_amount || 0, dp_method: st.dp_method,
+          bank_ids: st.bank_ids, notes: st.notes.trim(), dp_amount: st.dp_amount || 0, dp_method: st.dp_method, notify: !!(st.notify && PB.notifOn()),
           items: st.items.map(function (i) { return { product_id: i.product_id, name: i.name.trim(), description: i.description.trim(), qty: i.qty, unit: (i.unit || '').trim() || 'pcs', unit_price: i.unit_price, discount_type: i.discount_type, discount_value: i.discount_value }; })
         };
         const full = await PB.api.call('invoice.save', payload);
@@ -328,6 +330,7 @@
         dirty = false;
         try { localStorage.removeItem(DRAFT_KEY); } catch (e) {}
         if (full.warning) PB.toast(full.warning, 'warning');
+        if (payload.notify) { st.notify = false; const nf = $('#f-notify', root); if (nf) nf.checked = false; if (full.notif_queued) PB.notifToast(full); else PB.toast('Notifikasi tidak dikirim: customer tanpa nomor/email valid atau opt-out.', 'warning'); }
         return full;
       }
 

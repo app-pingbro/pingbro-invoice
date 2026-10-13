@@ -8,7 +8,7 @@
       const S = PB.state;
       let tab = 'identity';
       el.innerHTML = '<div class="page-head"><div><h1>Pengaturan</h1><p class="muted">Identitas usaha, rekening, katalog, dan penomoran</p></div></div>' +
-        '<div class="tabs" id="s-tabs"><button data-t="identity" class="on">Identitas</button><button data-t="banks">Rekening</button><button data-t="catalog">Katalog</button><button data-t="numbering">Penomoran & Teks</button></div>' +
+        '<div class="tabs" id="s-tabs"><button data-t="identity" class="on">Identitas</button><button data-t="banks">Rekening</button><button data-t="catalog">Katalog</button><button data-t="numbering">Penomoran & Teks</button><button data-t="notif">Notifikasi</button></div>' +
         '<div id="s-body"></div>';
       const body = $('#s-body', el);
 
@@ -31,14 +31,14 @@
         body.innerHTML = '<div class="grid-2"><section class="panel"><h3>Identitas usaha</h3><form id="f-id" novalidate>' +
           field('business_name', 'Nama usaha') + field('tagline', 'Tagline') + field('address', 'Alamat usaha', { area: 2, max: 300 }) +
           '<div class="row-2">' + field('whatsapp', 'WhatsApp usaha', { ph: '0812-…' }) + field('instagram', 'Instagram', { ph: '@pingbro' }) + '</div>' + field('email', 'Email (opsional)') +
-          field('closing_note', 'Catatan penutup di invoice', { area: 3, max: 600 }) +
+          field('closing_note', 'Catatan penutup di invoice', { area: 3, max: 600 }) + field('default_notes', 'Catatan default invoice baru (satu poin per baris)', { area: 3, max: 600 }) +
           '<button class="btn btn-primary" type="submit">' + PB.icon('save', 16) + 'Simpan</button></form></section>' +
           '<section class="panel"><h3>Logo invoice</h3><p class="muted small">Ganti logo bila perlu. PNG/JPG/WEBP, otomatis diperkecil.</p>' +
-          '<div class="logo-box"><div class="logo-prev light"><img id="lg-light" src="' + E(S.logos.light) + '" alt="Logo untuk invoice (latar putih)"></div><div class="logo-cap">Logo untuk invoice (latar terang)</div>' +
+          '<div class="logo-box"><div class="logo-prev light"><img id="lg-light" src="' + E(S.logos.light) + '" alt="Logo untuk invoice (latar putih)"></div><div class="logo-cap">Logo versi terang (teks hitam) — untuk latar putih</div>' +
           '<label class="btn btn-secondary file-btn">' + PB.icon('upload', 16) + 'Ganti logo terang<input type="file" accept="image/png,image/jpeg,image/webp" data-logo="light" hidden></label></div>' +
-          '<div class="logo-box"><div class="logo-prev dark"><img id="lg-dark" src="' + E(S.logos.dark) + '" alt="Logo untuk aplikasi (latar gelap)"></div><div class="logo-cap">Logo untuk aplikasi (latar gelap)</div>' +
+          '<div class="logo-box"><div class="logo-prev dark"><img id="lg-dark" src="' + E(S.logos.dark) + '" alt="Logo versi gelap (teks putih) — dipakai di header invoice dan aplikasi"></div><div class="logo-cap">Logo untuk aplikasi (latar gelap)</div>' +
           '<label class="btn btn-secondary file-btn">' + PB.icon('upload', 16) + 'Ganti logo gelap<input type="file" accept="image/png,image/jpeg,image/webp" data-logo="dark" hidden></label></div></section></div>';
-        $('#f-id', body).onsubmit = function (e) { e.preventDefault(); saveSettings(this, ['business_name', 'tagline', 'address', 'whatsapp', 'instagram', 'email', 'closing_note'], this.querySelector('[type=submit]')); };
+        $('#f-id', body).onsubmit = function (e) { e.preventDefault(); saveSettings(this, ['business_name', 'tagline', 'address', 'whatsapp', 'instagram', 'email', 'closing_note', 'default_notes'], this.querySelector('[type=submit]')); };
         PB.$$('[data-logo]', body).forEach(function (inp) {
           inp.onchange = async function () {
             const file = inp.files[0]; if (!file) return; inp.value = '';
@@ -161,7 +161,7 @@
         $('#f-wa', body).onsubmit = function (e) { e.preventDefault(); saveSettings(this, ['wa_template'], this.querySelector('[type=submit]')); };
       }
 
-      const T = { identity: identity, banks: banks, catalog: catalog, numbering: numbering };
+      const T = { identity: identity, banks: banks, catalog: catalog, numbering: numbering, notif: function () { PB.notifTab(body); } };
       function show(t) {
         tab = t; body.onclick = null;
         PB.$$('#s-tabs button', el).forEach(function (b) { b.classList.toggle('on', b.dataset.t === t); });

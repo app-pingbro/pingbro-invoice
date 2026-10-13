@@ -25,12 +25,14 @@
         '<div class="dv-h-r">' + PB.statusBadge(inv.payment_status) + '<button type="button" class="icon-btn" data-close aria-label="Tutup">' + PB.icon('x', 18) + '</button></div></div>' +
         '<div class="dv-cust"><b>' + E(inv.customer_name_snap) + '</b>' +
           (inv.customer_phone_snap ? '<span>' + PB.icon('phone', 13) + E(PB.fmtPhone(inv.customer_phone_snap)) + '</span>' : '') +
+          (inv.customer_email_snap ? '<span>' + PB.icon('mail', 13) + E(inv.customer_email_snap) + '</span>' : '') +
           (inv.customer_address_snap ? '<span>' + PB.icon('pin', 13) + E(inv.customer_address_snap) + '</span>' : '') + '</div>' +
         '<div class="dv-sum"><div><span>Total</span><b>' + PB.fmtRp(inv.total) + '</b></div><div><span>Dibayar</span><b class="ok">' + PB.fmtRp(inv.paid_total) + '</b></div><div><span>Sisa</span><b class="' + (inv.balance > 0 ? 'bad' : 'ok') + '">' + PB.fmtRp(inv.balance) + '</b></div></div>' +
         '<div class="dv-actions">' +
           '<button class="btn btn-secondary" data-a="view">' + PB.icon('eye', 16) + 'Lihat</button>' +
           '<button class="btn btn-secondary" data-a="jpg">' + PB.icon('download', 16) + 'Unduh JPG</button>' +
           '<button class="btn btn-wa" data-a="wa">' + PB.icon('whatsapp', 16) + 'WhatsApp</button>' +
+          (PB.notifOn() && inv.balance > 0 ? '<button class="btn btn-secondary" data-a="remind">' + PB.icon('whatsapp', 16) + 'Kirim pengingat</button>' : '') +
           '<a class="btn btn-secondary" href="#/invoice/edit/' + E(inv.invoice_id) + '" data-close>' + PB.icon('pencil', 16) + 'Edit</a>' +
           '<button class="btn btn-secondary" data-a="dup">' + PB.icon('copy', 16) + 'Duplikat</button>' +
           '<button class="btn btn-danger-ghost" data-a="del">' + PB.icon('trash', 16) + 'Hapus</button></div>' +
@@ -49,6 +51,9 @@
             '<div class="dv-pay-r">' + (p.proof_file_id ? '<button class="btn btn-sm btn-ghost" data-proof="' + E(p.payment_id) + '">' + PB.icon('image', 14) + 'Bukti</button>' : '') +
             (!v ? '<button class="btn btn-sm btn-danger-ghost" data-void="' + E(p.payment_id) + '">Batalkan</button>' : '') + '</div></div>';
         }).join('') + '</div>' : '<div class="muted small pad">Belum ada pembayaran.</div>') +
+        ((full.notifs || []).length ? '<h4 class="dv-t">Notifikasi terkirim</h4><div class="dv-pays">' + full.notifs.map(function (n) {
+          return '<div class="dv-notif"><div><b>' + E(n.kanal) + '</b> · ' + E(n.event) + '<div class="muted small">' + E(String(n.dibuat_pada || '').substring(0, 16).replace('T', ' ')) + (n.respon ? ' · ' + E(n.respon) : '') + '</div></div><span class="tag ' + (n.status === 'Terkirim' ? 'green' : (n.status === 'Gagal' ? 'red' : 'gold')) + '">' + E(n.status) + '</span></div>';
+        }).join('') + '</div>' : '') +
         '<div class="dv-t-row"><h4 class="dv-t">Lampiran</h4><label class="btn btn-sm btn-secondary file-btn">' + PB.icon('upload', 14) + 'Unggah gambar<input type="file" accept="image/png,image/jpeg,image/webp" id="att-file" hidden></label></div>' +
         (full.attachments.length ? '<div class="dv-pays">' + full.attachments.map(function (a) {
           return '<div class="dv-pay"><div><b>' + E(a.filename) + '</b> <span class="muted small">· ' + E(a.type) + '</span></div><div class="dv-pay-r"><button class="btn btn-sm btn-ghost" data-att="' + E(a.attachment_id) + '">' + PB.icon('eye', 14) + 'Lihat</button><button class="btn btn-sm btn-danger-ghost" data-attdel="' + E(a.attachment_id) + '">Hapus</button></div></div>';
@@ -79,6 +84,7 @@
         '<div class="row-2"><label class="field"><span class="label">Metode</span><select name="method">' + S.methods.map(function (x) { return '<option>' + E(x) + '</option>'; }).join('') + '</select></label>' +
         '<label class="field"><span class="label">Bukti transfer (opsional)</span><input type="file" name="proof" accept="image/png,image/jpeg,image/webp"></label></div>' +
         '<label class="field"><span class="label">Catatan (opsional)</span><input name="note" maxlength="300"></label>' +
+        PB.notifCheckbox('pm-notify', 'Kirim konfirmasi pembayaran ke customer via {kanal}', true) +
         '<div class="modal-actions"><button type="button" class="btn btn-secondary" data-close>Batal</button><button class="btn btn-primary" type="submit">Simpan pembayaran</button></div></form>', { cls: 'modal-md' });
       const f = pm.el.querySelector('form');
       f.amount.oninput = function () { PB.maskMoney(f.amount); };
@@ -92,10 +98,11 @@
         const btn = f.querySelector('[type=submit]');
         PB.setBusy(btn, true, 'Menyimpan…');
         try {
-          const data = { invoice_id: inv.invoice_id, amount: amount, payment_date: f.date.value, method: f.method.value, note: f.note.value.trim() };
+          const data = { invoice_id: inv.invoice_id, amount: amount, payment_date: f.date.value, method: f.method.value, note: f.note.value.trim(), notify: !!(f.querySelector('#pm-notify') && f.querySelector('#pm-notify').checked) };
           if (f.proof.files[0]) { const img = await PB.resizeImage(f.proof.files[0], 1600, false); data.proof = { mime: img.mime, base64: img.base64 }; }
           full = await PB.api.call('payment.add', data);
           pm.close(); render(); changed();
+          if (data.notify) { if (full.notif_queued) PB.notifToast(full); else PB.toast('Konfirmasi tidak dikirim: customer tanpa nomor/email valid atau opt-out.', 'warning'); }
           PB.toast(full.invoice.payment_status === PB.STATUS.PAID ? 'Pembayaran dicatat. Invoice LUNAS.' : 'Pembayaran dicatat.', 'success');
         } catch (e) { PB.setBusy(btn, false); err('amount', e.message); }
       };
@@ -118,6 +125,11 @@
           PB.toast('JPG diunduh.', 'success');
         });
         else if (act === 'wa') guard(a, 'Menyiapkan…', async function () { const blob = await makeBlob(); const r = await PB.shareInvoice(blob, inv); if (r === 'link') PB.toast('JPG diunduh. Lampirkan ke chat WhatsApp yang terbuka.', 'info'); });
+        else if (act === 'remind') guard(a, 'Mengantre…', async function () {
+          const r = await PB.api.call('notif.sendInvoice', { invoice_id: inv.invoice_id, event: 'PENGINGAT_TAGIHAN' });
+          PB.toast(r.queued + ' pengingat masuk antrean, terkirim dalam ±1 menit.', 'success');
+          full = await PB.api.call('invoice.get', { invoice_id: inv.invoice_id }); render();
+        });
         else if (act === 'dup') guard(a, 'Menduplikat…', async function () {
           const r = await PB.api.call('invoice.duplicate', { invoice_id: inv.invoice_id });
           PB.toast('Duplikat dibuat: ' + r.invoice.invoice_no, 'success'); changed(); id = r.invoice.invoice_id; full = r; render();

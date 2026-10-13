@@ -122,7 +122,7 @@
       const b = await PB.api.call('app.bootstrap');
       const st = PB.state;
       st.user = b.user; st.settings = b.settings; st.banks = b.banks; st.customers = b.customers;
-      st.products = b.products; st.today = b.today; st.methods = b.payment_methods || ['Transfer', 'Tunai', 'QRIS', 'Lainnya'];
+      st.products = b.products; st.today = b.today; st.notif = b.notif || { wa_aktif: false, email_aktif: false }; st.methods = b.payment_methods || ['Transfer', 'Tunai', 'QRIS', 'Lainnya'];
       $('#login').classList.add('hidden');
       $('#app').classList.remove('hidden');
       $('#user-email').textContent = b.user.email;
@@ -150,7 +150,7 @@
   PB.refreshRef = async function () {
     const b = await PB.api.call('app.bootstrap');
     const st = PB.state;
-    st.settings = b.settings; st.banks = b.banks; st.customers = b.customers; st.products = b.products; st.today = b.today;
+    st.settings = b.settings; st.banks = b.banks; st.customers = b.customers; st.products = b.products; st.today = b.today; st.notif = b.notif || st.notif;
     return st;
   };
 

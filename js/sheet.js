@@ -24,9 +24,16 @@
     return { items: rows, subtotal: subtotal, total_discount: totalDisc, total: subtotal - totalDisc };
   }
 
-  function statusStamp(status) {
-    const cls = PB.statusClass(status);
-    return '<div class="sh-stamp sh-stamp-' + cls + '">' + E(String(status || '').toUpperCase()) + '</div>';
+  const BANK_COLORS = {
+    BCA: ['#FBBF24', '#1A1203'], MANDIRI: ['#0B2545', '#FFFFFF'], BRI: ['#00539F', '#FFFFFF'], BNI: ['#F37021', '#FFFFFF'],
+    BSI: ['#00A19B', '#FFFFFF'], CIMB: ['#A4161A', '#FFFFFF'], PERMATA: ['#00A650', '#FFFFFF'], DANAMON: ['#0054A6', '#FFFFFF'],
+    BTN: ['#F5A800', '#1A1203'], JAGO: ['#FFC700', '#1A1203'], SEABANK: ['#FF6A00', '#FFFFFF'], DANA: ['#118EEA', '#FFFFFF'],
+    OVO: ['#4C2A86', '#FFFFFF'], GOPAY: ['#00AED6', '#FFFFFF'], SHOPEEPAY: ['#EE4D2D', '#FFFFFF']
+  };
+  function bankChip(name) {
+    const key = String(name || '').toUpperCase().replace(/[^A-Z]/g, '');
+    const c = BANK_COLORS[key] || ['#1F2937', '#FFFFFF'];
+    return '<span class="sh-bank-chip" style="background:' + c[0] + ';color:' + c[1] + '">' + E(String(name || '').toUpperCase()) + '</span>';
   }
 
   function render(m) {
@@ -36,7 +43,8 @@
     const balance = Math.max(0, c.total - paid);
     const status = m.status || (paid <= 0 ? PB.STATUS.UNPAID : (paid >= c.total && c.total > 0 ? PB.STATUS.PAID : PB.STATUS.PARTIAL));
     const hasDisc = c.items.some(function (i) { return i.discount_amount > 0; });
-    const logo = m.logo || 'assets/logo-light.png';
+    const logo = m.logo || 'assets/logo-dark.png';
+    const cls = PB.statusClass(status);
 
     const rows = c.items.length ? c.items.map(function (it, i) {
       const discTxt = it.discount_amount > 0
@@ -46,57 +54,66 @@
         '<td class="c">' + (i + 1) + '</td>' +
         '<td><div class="it-name">' + E(it.name || '—') + '</div>' +
         (it.description ? '<div class="it-desc">' + PB.escBr(it.description) + '</div>' : '') + '</td>' +
-        '<td class="c">' + PB.fmtQty(it.qty) + ' ' + E(it.unit || '') + '</td>' +
-        '<td class="r">' + PB.fmtRp(it.unit_price) + '</td>' +
-        (hasDisc ? '<td class="r">' + discTxt + '</td>' : '') +
-        '<td class="r b">' + PB.fmtRp(it.line_total) + '</td></tr>';
+        '<td class="c nw">' + PB.fmtQty(it.qty) + ' ' + E(it.unit || '') + '</td>' +
+        '<td class="r nw">' + PB.fmtRp(it.unit_price) + '</td>' +
+        (hasDisc ? '<td class="r nw">' + discTxt + '</td>' : '') +
+        '<td class="r b nw">' + PB.fmtRp(it.line_total) + '</td></tr>';
     }).join('') : '<tr><td colspan="' + (hasDisc ? 6 : 5) + '" class="sh-empty">Belum ada item. Tambahkan item di formulir.</td></tr>';
 
     const banks = (m.banks || []).map(function (b) {
-      return '<div class="sh-bank"><span class="sh-bank-chip">' + E(String(b.bank_name || '').toUpperCase()) + '</span>' +
+      return '<div class="sh-bank">' + bankChip(b.bank_name) +
         '<div><div class="sh-bank-no">' + E(b.account_no) + '</div><div class="sh-bank-an">a.n. ' + E(b.account_holder) + '</div></div></div>';
     }).join('');
 
+    const noteLines = String(m.notes || '').split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    const notes = noteLines.length ? '<div class="sh-lbl" style="margin-top:18px">Catatan</div><ul class="sh-notes">' +
+      noteLines.map(function (x) { return '<li>' + E(x) + '</li>'; }).join('') + '</ul>' : '';
+
     const contact = [];
-    if (s.whatsapp) contact.push(PB.icon('phone', 13) + '<span>' + E(s.whatsapp) + '</span>');
-    if (s.instagram) contact.push(PB.icon('insta', 13) + '<span>' + E(s.instagram) + '</span>');
-    if (s.email) contact.push(PB.icon('mail', 13) + '<span>' + E(s.email) + '</span>');
-    if (s.address) contact.push(PB.icon('pin', 13) + '<span>' + E(s.address) + '</span>');
+    if (s.whatsapp) contact.push(PB.icon('phone', 15) + '<span>' + E(s.whatsapp) + '</span>');
+    if (s.instagram) contact.push(PB.icon('insta', 15) + '<span class="up">' + E(s.instagram) + '</span>');
+    if (s.email) contact.push(PB.icon('mail', 15) + '<span class="up">' + E(s.email) + '</span>');
 
     return '<div class="sheet" data-sheet>' +
-      '<div class="sh-flame"></div>' +
-      '<div class="sh-head">' +
+      '<div class="sh-top">' +
+        '<div class="sh-top-dark"></div><div class="sh-top-gold"></div><div class="sh-top-bar"></div>' +
         '<div class="sh-brand"><img class="sh-logo" src="' + E(logo) + '" alt="PING BRO"><div class="sh-tag">' + E(s.tagline || '') + '</div></div>' +
         '<div class="sh-title"><div class="sh-inv">INVOICE</div>' +
           '<div class="sh-no">' + (m.invoice_no ? E(m.invoice_no) : '<span class="sh-pending">Nomor dibuat saat disimpan</span>') + '</div>' +
-          '<div class="sh-meta"><span>Tanggal</span><b>' + PB.fmtDate(m.invoice_date) + '</b></div>' +
-          (m.order_code ? '<div class="sh-meta"><span>Kode Order</span><b>' + E(m.order_code) + '</b></div>' : '') +
+          '<div class="sh-date"><span>Tanggal</span><b>' + PB.fmtDate(m.invoice_date) + '</b></div>' +
         '</div>' +
       '</div>' +
-      '<div class="sh-bar"></div>' +
-      '<div class="sh-to"><div class="sh-lbl">Ditagihkan kepada</div>' +
-        '<div class="sh-cust">' + (m.customer_name ? E(m.customer_name) : '<span class="sh-pending">Pilih customer</span>') + '</div>' +
-        (m.customer_phone ? '<div class="sh-line">' + PB.icon('phone', 12) + E(PB.fmtPhone(m.customer_phone)) + '</div>' : '') +
-        (m.customer_address ? '<div class="sh-line">' + PB.icon('pin', 12) + PB.escBr(m.customer_address) + '</div>' : '') +
-      '</div>' +
-      '<table class="sh-table"><thead><tr><th class="c" style="width:34px">No</th><th>Deskripsi</th><th class="c" style="width:84px">Qty</th><th class="r" style="width:104px">Harga</th>' +
-        (hasDisc ? '<th class="r" style="width:92px">Diskon</th>' : '') + '<th class="r" style="width:116px">Jumlah</th></tr></thead><tbody>' + rows + '</tbody></table>' +
-      '<div class="sh-bottom">' +
-        '<div class="sh-left">' +
-          (banks ? '<div class="sh-lbl">Pembayaran via transfer</div>' + banks : '') +
-          (m.notes ? '<div class="sh-lbl" style="margin-top:12px">Catatan</div><div class="sh-notes">' + PB.escBr(m.notes) + '</div>' : '') +
+      '<div class="sh-body">' +
+        '<div class="sh-to"><div class="sh-to-l"><div class="sh-lbl">Ditagihkan kepada</div>' +
+          '<div class="sh-cust">' + (m.customer_name ? E(m.customer_name) : '<span class="sh-pending">Pilih customer</span>') + '</div>' +
+          (m.customer_phone ? '<div class="sh-line">' + PB.icon('phone', 16) + '<span>' + E(PB.fmtPhone(m.customer_phone)) + '</span></div>' : '') +
+          (m.customer_email ? '<div class="sh-line">' + PB.icon('mail', 16) + '<span>' + E(m.customer_email) + '</span></div>' : '') +
+          (m.customer_address ? '<div class="sh-line">' + PB.icon('pin', 16) + '<span>' + PB.escBr(m.customer_address) + '</span></div>' : '') +
         '</div>' +
-        '<div class="sh-right"><div class="sh-sum">' +
-          '<div class="row"><span>Subtotal</span><b>' + PB.fmtRp(c.subtotal) + '</b></div>' +
-          (c.total_discount > 0 ? '<div class="row disc"><span>Total diskon</span><b>- ' + PB.fmtRp(c.total_discount) + '</b></div>' : '') +
-          '<div class="row total"><span>TOTAL</span><b>' + PB.fmtRp(c.total) + '</b></div>' +
-          (paid > 0 ? '<div class="row"><span>Sudah dibayar</span><b>' + PB.fmtRp(paid) + '</b></div>' : '') +
-          '<div class="row due"><span>Sisa tagihan</span><b>' + PB.fmtRp(balance) + '</b></div>' +
-        '</div>' + statusStamp(status) + '</div>' +
+        (m.order_code ? '<div class="sh-to-r"><div class="sh-lbl">Kode Order</div><div class="sh-order">' + E(m.order_code) + '</div></div>' : '') +
+        '</div>' +
+        '<table class="sh-table"><thead><tr><th class="c" style="width:44px">No</th><th>Deskripsi</th><th class="c" style="width:84px">Qty</th><th class="r" style="width:104px">Harga</th>' +
+          (hasDisc ? '<th class="r" style="width:92px">Diskon</th>' : '') + '<th class="r" style="width:118px">Jumlah</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="sh-bottom">' +
+          '<div class="sh-left">' + (banks ? '<div class="sh-lbl">Pembayaran via transfer</div>' + banks : '') + notes + '</div>' +
+          '<div class="sh-right"><div class="sh-sum">' +
+            '<div class="row"><span>Subtotal</span><b>' + PB.fmtRp(c.subtotal) + '</b></div>' +
+            (c.total_discount > 0 ? '<div class="row disc"><span>Total diskon</span><b>- ' + PB.fmtRp(c.total_discount) + '</b></div>' : '') +
+            '<div class="row total"><span>Total</span><b>' + PB.fmtRp(c.total) + '</b></div>' +
+            '<div class="row paid"><span>Sudah dibayar</span><b>' + PB.fmtRp(paid) + '</b></div>' +
+            '<div class="row due"><span>Sisa tagihan</span><b>' + PB.fmtRp(balance) + '</b></div></div>' +
+            '<div class="sh-stamp sh-stamp-' + cls + '">' + E(String(status).toUpperCase()) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="sh-thanks"><div class="sh-script">Terima Kasih</div>' +
+          '<div class="sh-ty"><i></i><span>ATAS KEPERCAYAAN DAN KERJASAMANYA</span><i></i></div>' +
+          (s.closing_note ? '<div class="sh-closing">' + PB.escBr(s.closing_note) + '</div>' : '') + '</div>' +
+        '<div class="sh-foot">' +
+          (contact.length ? '<div class="sh-foot-row">' + contact.map(function (x) { return '<div class="ct">' + x + '</div>'; }).join('') + '</div>' : '') +
+          (s.address ? '<div class="sh-foot-row"><div class="ct">' + PB.icon('pin', 15) + '<span>' + E(s.address) + '</span></div></div>' : '') +
+        '</div>' +
       '</div>' +
-      '<div class="sh-thanks"><div class="sh-script">Terima Kasih</div>' +
-        (s.closing_note ? '<div class="sh-closing">' + PB.escBr(s.closing_note) + '</div>' : '') + '</div>' +
-      '<div class="sh-foot">' + contact.map(function (x) { return '<div class="ct">' + x + '</div>'; }).join('') + '</div>' +
+      '<div class="sh-band"><i class="l"></i><span>' + E(String(s.business_name || 'PING BRO KONVEKSI & SABLON').toUpperCase()) + '</span><i class="r"></i></div>' +
     '</div>';
   }
 
@@ -104,11 +121,11 @@
   function fit(wrap) {
     const sheet = wrap.querySelector('.sheet');
     if (!sheet) return;
-    const avail = wrap.clientWidth || W;
-    const sc = Math.min(1, avail / W);
+    const avail = wrap.getBoundingClientRect().width || W;
+    const sc = avail / W;                          // selalu mengisi lebar wadah persis (tanpa tepi kosong)
     const h = Math.max(H, sheet.offsetHeight);
     sheet.style.transform = 'scale(' + sc + ')';
-    wrap.style.height = Math.round(h * sc) + 'px';
+    wrap.style.height = (h * sc) + 'px';
   }
 
   async function waitImages(root) {
