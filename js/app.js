@@ -107,8 +107,16 @@
 
   async function onCredential(resp) {
     if (!resp || !resp.credential) return;
-    PB.api.setToken(resp.credential);
     $('#login-msg').className = 'login-msg info'; $('#login-msg').textContent = 'Memverifikasi akun…';
+    PB.api.setToken(resp.credential, false);           // ID token Google hanya di memori
+    try {
+      const r = await PB.api.call('auth.login');       // tukar dengan sesi 30 hari
+      PB.api.setToken(r.session, true);
+    } catch (e) {
+      PB.api.setToken('');
+      if (e.code !== 'UNAUTHORIZED') showLogin(e.message || 'Gagal masuk.', true);
+      return;
+    }
     await start();
   }
 

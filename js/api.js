@@ -3,14 +3,17 @@
    ============================================================ */
 (function (PB) {
   'use strict';
-  const KEY = 'pb_id_token';
+  // Token sesi (berlaku 30 hari, dari server) disimpan di perangkat agar tidak perlu login terus.
+  const KEY = 'pb_session';
   let token = '';
-  try { token = sessionStorage.getItem(KEY) || ''; } catch (e) {}
+  try { token = localStorage.getItem(KEY) || ''; } catch (e) {}
+  try { sessionStorage.removeItem('pb_id_token'); } catch (e) {}
 
   PB.api = {
-    setToken: function (t) {
+    /** persist=false: hanya di memori (dipakai untuk ID token Google yang sekali pakai) */
+    setToken: function (t, persist) {
       token = t || '';
-      try { if (t) sessionStorage.setItem(KEY, t); else sessionStorage.removeItem(KEY); } catch (e) {}
+      try { if (t && persist !== false) localStorage.setItem(KEY, t); else if (!t) localStorage.removeItem(KEY); } catch (e) {}
     },
     hasToken: function () { return !!token; },
 
@@ -42,6 +45,7 @@
         }
         throw e;
       }
+      if (json.session && json.session !== token) PB.api.setToken(json.session);   // sesi bergulir
       return json.data;
     },
 
