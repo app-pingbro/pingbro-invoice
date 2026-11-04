@@ -259,13 +259,16 @@ input[type=file] { padding: 8px; font-size: 12px; }
 .sh-ty { display: flex; align-items: center; justify-content: center; gap: 24px; margin-top: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: .22em; color: #4B5563; }
 .sh-ty i { display: block; width: 98px; height: 1.5px; background: #E0A030; flex: none; }
 .sh-closing { font-size: 12px; color: #6B7280; margin: 8px auto 0; max-width: 520px; }
-.sh-foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid #E5E7EB; display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 13.5px; color: #374151; font-weight: 500; }
-.sh-foot-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 34px; } .sh-foot .ct { display: flex; align-items: center; gap: 9px; } .sh-foot .ic { color: #F59E0B; width: 19px; height: 19px; }
-.sh-band { position: relative; flex: none; height: 52px; background: linear-gradient(90deg, #0B0D10, #1A202C 50%, #0B0D10); display: flex; align-items: center; justify-content: center; overflow: hidden; color: #D1D5DB; font-weight: 500; font-size: 12px; letter-spacing: .42em; }
-.sh-band span { margin-right: -.42em; }
-.sh-band i { position: absolute; top: 0; bottom: 0; width: 140px; background-repeat: no-repeat; background-size: 100% 100%; }
-.sh-band i.l { left: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 52' preserveAspectRatio='none'%3E%3Cpolygon points='0,0 26,0 0,36' fill='%23F5A623'/%3E%3Cpolygon points='34,0 58,0 92,52 68,52' fill='%23F5A623'/%3E%3Cpolygon points='66,0 78,0 112,52 100,52' fill='%23F5A623'/%3E%3Cpolygon points='0,52 0,44 30,52' fill='%23F5A623'/%3E%3C/svg%3E"); }
-.sh-band i.r { right: 0; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 52' preserveAspectRatio='none'%3E%3Cpolygon points='140,0 114,0 140,36' fill='%23F5A623'/%3E%3Cpolygon points='106,0 82,0 48,52 72,52' fill='%23F5A623'/%3E%3Cpolygon points='74,0 62,0 28,52 40,52' fill='%23F5A623'/%3E%3Cpolygon points='140,52 140,44 110,52' fill='%23F5A623'/%3E%3C/svg%3E"); }
+.sh-foot { margin-top: 16px; padding-top: 12px; border-top: 1px solid #E5E7EB; display: flex; flex-direction: column; gap: 8px; align-items: center; font-size: 13px; color: #374151; font-weight: 500; }
+.sh-foot-row { display: flex; justify-content: center; flex-wrap: nowrap; gap: 22px; width: 100%; } .sh-foot .ct { display: flex; align-items: center; gap: 7px; white-space: nowrap; flex: none; } .sh-foot .ic { color: #F59E0B; width: 19px; height: 19px; }
+.sh-band { position: relative; flex: none; height: 52px; background: linear-gradient(90deg, #0B0D10, #161B24 50%, #0B0D10); display: flex; align-items: center; justify-content: center; overflow: hidden; color: #E5E7EB; font-weight: 500; font-size: 12px; letter-spacing: .42em; }
+.sh-band span { margin-right: -.42em; position: relative; z-index: 1; }
+.sh-band i { position: absolute; inset: 0; }
+.sh-band i.l0 { clip-path: polygon(0 0, 8px 0, 52px 100%, 0 100%); background: linear-gradient(90deg, #2B2010, #6B4A12); }
+.sh-band i.l1 { clip-path: polygon(8px 0, 56px 0, 100px 100%, 52px 100%); background: linear-gradient(135deg, #C98210, #FBBF24); }
+.sh-band i.l2 { clip-path: polygon(77px 0, 99px 0, 143px 100%, 121px 100%); background: linear-gradient(135deg, #E59A14, #FBBF24); }
+.sh-band i.r1 { clip-path: polygon(calc(100% - 164px) 0, calc(100% - 144px) 0, calc(100% - 100px) 100%, calc(100% - 120px) 100%); background: linear-gradient(135deg, #B8780E, #F5A623); }
+.sh-band i.r2 { clip-path: polygon(calc(100% - 126px) 0, 100% 0, 100% 100%, calc(100% - 82px) 100%); background: linear-gradient(135deg, #8A5A12, #F5A623 45%, #FBBF24); }
 
 /* ---------- Responsif ---------- */
 @media (max-width: 1280px) {

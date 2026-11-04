@@ -113,7 +113,7 @@
           (s.address ? '<div class="sh-foot-row"><div class="ct">' + PB.icon('pin', 15) + '<span>' + E(s.address) + '</span></div></div>' : '') +
         '</div>' +
       '</div>' +
-      '<div class="sh-band"><i class="l"></i><span>' + E(String(s.business_name || 'PING BRO KONVEKSI & SABLON').toUpperCase()) + '</span><i class="r"></i></div>' +
+      '<div class="sh-band"><i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="r1"></i><i class="r2"></i><span>' + E(String(s.business_name || 'PING BRO KONVEKSI & SABLON').toUpperCase()) + '</span></div>' +
     '</div>';
   }
 
